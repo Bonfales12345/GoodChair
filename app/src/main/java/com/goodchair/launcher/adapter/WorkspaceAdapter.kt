@@ -30,17 +30,14 @@ class WorkspaceAdapter(
 
     override fun onBindViewHolder(holder: WorkspaceViewHolder, position: Int) {
         val app = apps[position]
-        
-        // Restore custom size
         val prefs = holder.itemView.context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
-        val customWidth = prefs.getInt("app_width_${app.packageName}", -2) // WRAP_CONTENT
+        val customWidth = prefs.getInt("app_width_${app.packageName}", -2)
         val customHeight = prefs.getInt("app_height_${app.packageName}", -2)
         
         if (customWidth > 100 && customHeight > 100) {
             holder.itemView.layoutParams.width = customWidth
             holder.itemView.layoutParams.height = customHeight
             
-            // Adjust icon size and shape based on container size
             val iconCard = holder.itemView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.icon_card)
             if (iconCard != null) {
                 val params = iconCard.layoutParams
@@ -48,7 +45,6 @@ class WorkspaceAdapter(
                 params.height = (customHeight * 0.7f).toInt()
                 iconCard.layoutParams = params
                 
-                // Morph shape: if it's much wider than high or vice-versa, or just big, reduce corner radius percentage
                 iconCard.radius = (Math.min(params.width, params.height) * 0.3f)
             }
         }
