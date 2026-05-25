@@ -47,7 +47,6 @@ class WorkspacePagerAdapter(
     override fun getItemCount(): Int = pages.size
 
     fun addApp(app: AppInfo) {
-        // Find first page with space or create new
         var page = pages.lastOrNull()
         if (page == null || page.size >= 16) {
             page = mutableListOf()
