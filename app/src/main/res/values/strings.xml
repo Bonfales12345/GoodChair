@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">GoodChair</string>
+    <string name="settings_title">Launcher Settings</string>
+    <string name="grid_columns">Grid Columns</string>
+    <string name="hide_system_apps">Hide System Apps</string>
+    <string name="search_hint">Search apps</string>
+</resources>
