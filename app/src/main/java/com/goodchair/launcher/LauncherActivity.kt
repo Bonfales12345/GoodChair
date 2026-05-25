@@ -69,13 +69,11 @@ class LauncherActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         DynamicColors.applyToActivitiesIfAvailable(application)
-        
-        // Force wallpaper visibility
+
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
         
         setContentView(R.layout.activity_launcher)
 
-        // Ensure window is fully transparent
         window.setBackgroundDrawableResource(android.R.color.transparent)
         window.setDimAmount(0f)
 
@@ -144,7 +142,6 @@ class LauncherActivity : AppCompatActivity() {
             true
         }, isDock = true)
         dockRecyclerView.adapter = dockAdapter
-        // Force horizontal layout explicitly
         dockRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
         val dockBlurBg = homeLayout.findViewById<View>(R.id.dock_blur_background)
@@ -155,11 +152,9 @@ class LauncherActivity : AppCompatActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
-        // Swipe up gesture - refine detection
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                if (::bottomSheetBehavior.isInitialized && e1 != null && e1.y - e2.y > 80) { // More sensitive swipe up
+                if (::bottomSheetBehavior.isInitialized && e1 != null && e1.y - e2.y > 80) {
                     bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
                     return true
                 }
@@ -167,7 +162,7 @@ class LauncherActivity : AppCompatActivity() {
             }
             
             override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-                if (::bottomSheetBehavior.isInitialized && e1 != null && e1.y - e2.y > 40) { // Swipe up scroll
+                if (::bottomSheetBehavior.isInitialized && e1 != null && e1.y - e2.y > 40) {
                     bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
                     return true
                 }
@@ -287,14 +282,12 @@ class LauncherActivity : AppCompatActivity() {
                     itemView.layoutParams.width = newWidth
                     itemView.layoutParams.height = newHeight
                     
-                    // Adaptive scaling for icons
                     val iconCard = itemView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.icon_card)
                     if (iconCard != null) {
                         val cardParams = iconCard.layoutParams
                         cardParams.width = (newWidth * 0.8f).toInt()
                         cardParams.height = (newHeight * 0.8f).toInt()
                         iconCard.layoutParams = cardParams
-                        // Morph to rectangle if large
                         iconCard.radius = (Math.min(cardParams.width, cardParams.height) * 0.25f)
                     }
                     
@@ -608,7 +601,6 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun setupSettings() {
-        // Settings FAB removed, accessed via long-press context menu
     }
 
     private fun loadApps() {
