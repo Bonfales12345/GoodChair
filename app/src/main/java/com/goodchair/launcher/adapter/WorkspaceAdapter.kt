@@ -12,12 +12,13 @@ import com.goodchair.launcher.model.AppInfo
 import java.util.Collections
 
 class WorkspaceAdapter(
-    private var apps: MutableList<AppInfo>,
+    private var apps: MutableList<AppInfo?>, // Changed to nullable for empty slots
     private val onAppClick: (AppInfo) -> Unit,
     private val onAppLongClick: (AppInfo, View) -> Boolean
 ) : RecyclerView.Adapter<WorkspaceAdapter.WorkspaceViewHolder>() {
 
     class WorkspaceViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val iconCard: com.google.android.material.card.MaterialCardView = view.findViewById(R.id.icon_card)
         val icon: ImageView = view.findViewById(R.id.app_icon)
         val name: TextView = view.findViewById(R.id.app_name)
     }
@@ -31,26 +32,37 @@ class WorkspaceAdapter(
     override fun onBindViewHolder(holder: WorkspaceViewHolder, position: Int) {
         val app = apps[position]
         
-        // Restore custom size
+        if (app == null) {
+            holder.itemView.visibility = View.INVISIBLE
+            holder.itemView.setOnClickListener(null)
+            holder.itemView.setOnLongClickListener(null)
+            return
+        }
+
+        holder.itemView.visibility = View.VISIBLE
+
         val prefs = holder.itemView.context.getSharedPreferences("launcher_prefs", Context.MODE_PRIVATE)
-        val customWidth = prefs.getInt("app_width_${app.packageName}", -2) // WRAP_CONTENT
+        val customWidth = prefs.getInt("app_width_${app.packageName}", -2)
         val customHeight = prefs.getInt("app_height_${app.packageName}", -2)
         
         if (customWidth > 100 && customHeight > 100) {
             holder.itemView.layoutParams.width = customWidth
             holder.itemView.layoutParams.height = customHeight
             
-            // Adjust icon size and shape based on container size
-            val iconCard = holder.itemView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.icon_card)
-            if (iconCard != null) {
-                val params = iconCard.layoutParams
-                params.width = (customWidth * 0.7f).toInt()
-                params.height = (customHeight * 0.7f).toInt()
-                iconCard.layoutParams = params
-                
-                // Morph shape: if it's much wider than high or vice-versa, or just big, reduce corner radius percentage
-                iconCard.radius = (Math.min(params.width, params.height) * 0.3f)
-            }
+            val params = holder.iconCard.layoutParams
+            params.width = (customWidth * 0.7f).toInt()
+            params.height = (customHeight * 0.7f).toInt()
+            holder.iconCard.layoutParams = params
+            holder.iconCard.radius = (Math.min(params.width, params.height) * 0.3f)
+        } else {
+            holder.itemView.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+            holder.itemView.layoutParams.height = 120 // dp equivalent if needed, but keeping it consistent
+            
+            val params = holder.iconCard.layoutParams
+            params.width = (48 * holder.itemView.context.resources.displayMetrics.density).toInt()
+            params.height = (48 * holder.itemView.context.resources.displayMetrics.density).toInt()
+            holder.iconCard.layoutParams = params
+            holder.iconCard.radius = params.width / 2f
         }
 
         holder.name.text = app.label
@@ -59,20 +71,12 @@ class WorkspaceAdapter(
         holder.itemView.setOnLongClickListener { onAppLongClick(app, it) }
     }
 
-    override fun getItemCount(): Int = apps.size
+    override fun getItemCount(): Int = 16
 
-    fun addApp(app: AppInfo) {
-        if (!apps.any { it.packageName == app.packageName }) {
-            apps.add(app)
-            notifyItemInserted(apps.size - 1)
-        }
-    }
-
-    fun removeApp(app: AppInfo) {
-        val index = apps.indexOfFirst { it.packageName == app.packageName }
-        if (index != -1) {
-            apps.removeAt(index)
-            notifyItemRemoved(index)
+    fun updateSlot(position: Int, app: AppInfo?) {
+        if (position in 0 until 16) {
+            apps[position] = app
+            notifyItemChanged(position)
         }
     }
 
@@ -81,5 +85,5 @@ class WorkspaceAdapter(
         notifyItemMoved(fromPosition, toPosition)
     }
     
-    fun getApps(): List<AppInfo> = apps
+    fun getApps(): List<AppInfo?> = apps
 }
