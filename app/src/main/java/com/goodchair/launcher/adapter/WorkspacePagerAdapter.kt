@@ -11,7 +11,7 @@ import com.goodchair.launcher.R
 import com.goodchair.launcher.model.AppInfo
 
 class WorkspacePagerAdapter(
-    private var pages: MutableList<MutableList<AppInfo>>,
+    private var pages: MutableList<MutableList<AppInfo?>>,
     private val onAppClick: (AppInfo) -> Unit,
     private val onAppLongClick: (AppInfo, View) -> Boolean,
     private val onAppsChanged: () -> Unit
@@ -47,14 +47,13 @@ class WorkspacePagerAdapter(
     override fun getItemCount(): Int = pages.size
 
     fun addApp(app: AppInfo) {
-        // Find first page with space or create new
         var page = pages.lastOrNull()
         if (page == null || page.size >= 16) {
             page = mutableListOf()
             pages.add(page)
             notifyItemInserted(pages.size - 1)
         }
-        if (!page.any { it.packageName == app.packageName }) {
+        if (!page.any { it?.packageName == app.packageName }) {
             page.add(app)
             notifyItemChanged(pages.size - 1)
             onAppsChanged()
@@ -63,7 +62,7 @@ class WorkspacePagerAdapter(
     
     fun removeApp(app: AppInfo) {
         pages.forEachIndexed { index, list ->
-            val found = list.removeIf { it.packageName == app.packageName }
+            val found = list.removeIf { it?.packageName == app.packageName }
             if (found) {
                 notifyItemChanged(index)
                 onAppsChanged()
@@ -71,5 +70,5 @@ class WorkspacePagerAdapter(
         }
     }
 
-    fun getAllApps(): List<AppInfo> = pages.flatten()
+    fun getAllApps(): List<AppInfo?> = pages.flatten()
 }
