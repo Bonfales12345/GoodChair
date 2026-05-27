@@ -12,7 +12,7 @@ import com.goodchair.launcher.model.AppInfo
 import java.util.Collections
 
 class WorkspaceAdapter(
-    private var apps: MutableList<AppInfo?>, // Changed to nullable for empty slots
+    private var apps: MutableList<AppInfo?>,
     private val onAppClick: (AppInfo) -> Unit,
     private val onAppLongClick: (AppInfo, View) -> Boolean
 ) : RecyclerView.Adapter<WorkspaceAdapter.WorkspaceViewHolder>() {
@@ -56,7 +56,7 @@ class WorkspaceAdapter(
             holder.iconCard.radius = (Math.min(params.width, params.height) * 0.3f)
         } else {
             holder.itemView.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
-            holder.itemView.layoutParams.height = 120 // dp equivalent if needed, but keeping it consistent
+            holder.itemView.layoutParams.height = (120 * holder.itemView.context.resources.displayMetrics.density).toInt()
             
             val params = holder.iconCard.layoutParams
             params.width = (48 * holder.itemView.context.resources.displayMetrics.density).toInt()

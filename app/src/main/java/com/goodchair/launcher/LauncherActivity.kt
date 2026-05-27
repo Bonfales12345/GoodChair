@@ -20,6 +20,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.PopupMenu
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
@@ -35,6 +36,7 @@ import com.goodchair.launcher.adapter.AppAdapter
 import com.goodchair.launcher.adapter.WorkspaceAdapter
 import com.goodchair.launcher.adapter.WorkspacePagerAdapter
 import com.goodchair.launcher.model.AppInfo
+import com.goodchair.launcher.view.GestureFrameLayout
 import java.util.Collections
 import java.util.Locale
 import android.text.Editable
@@ -58,7 +60,7 @@ class LauncherActivity : AppCompatActivity() {
     
     private lateinit var homeLayout: View
     private var allApps = listOf<AppInfo>()
-    private lateinit var gestureDetector: GestureDetector
+    private var gestureDetector: GestureDetector? = null
     
     companion object {
         private const val APPWIDGET_HOST_ID = 1024
@@ -149,30 +151,40 @@ class LauncherActivity : AppCompatActivity() {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 dockBlurBg?.setRenderEffect(RenderEffect.createBlurEffect(25f, 25f, Shader.TileMode.CLAMP))
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (e: Exception) {}
 
-        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+        val detector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                if (::bottomSheetBehavior.isInitialized && e1 != null && e1.y - e2.y > 80) { // More sensitive swipe up
-                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
-                    return true
+                if (::bottomSheetBehavior.isInitialized && e1 != null) {
+                    val diffY = e1.y - e2.y
+                    if (diffY > 50) {
+                        bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+                        return true
+                    }
                 }
                 return false
             }
             
             override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-                if (::bottomSheetBehavior.isInitialized && e1 != null && e1.y - e2.y > 40) { // Swipe up scroll
-                    bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
-                    return true
+                if (::bottomSheetBehavior.isInitialized && e1 != null) {
+                    val diffY = e1.y - e2.y
+                    val diffX = Math.abs(e1.x - e2.x)
+                    if (diffY > 100 && diffY > diffX) {
+                        bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
+                        return true
+                    }
                 }
                 return false
             }
         })
+        gestureDetector = detector
+
+        if (homeLayout is GestureFrameLayout) {
+            (homeLayout as GestureFrameLayout).setGestureDetector(detector)
+        }
 
         homeLayout.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
+            gestureDetector?.onTouchEvent(event)
             true
         }
 
@@ -189,8 +201,20 @@ class LauncherActivity : AppCompatActivity() {
                     val packageName = event.clipData.getItemAt(0).text.toString()
                     val dockContainer = homeLayout.findViewById<View>(R.id.dock_container)
                     
-                    if (dockContainer != null && isPointInsideView(event.x, event.y, dockContainer)) {
-                        pinAppToDock(packageName)
+                    if (dockContainer != null) {
+                        val location = IntArray(2)
+                        dockContainer.getLocationOnScreen(location)
+                        val parentLocation = IntArray(2)
+                        homeLayout.getLocationOnScreen(parentLocation)
+                        val relativeX = location[0] - parentLocation[0]
+                        val relativeY = location[1] - parentLocation[1]
+                        val rect = Rect(relativeX, relativeY, relativeX + dockContainer.width, relativeY + dockContainer.height)
+                        
+                        if (rect.contains(event.x.toInt(), event.y.toInt())) {
+                            pinAppToDock(packageName)
+                        } else {
+                            pinAppToWorkspace(packageName)
+                        }
                     } else {
                         pinAppToWorkspace(packageName)
                     }
@@ -240,11 +264,15 @@ class LauncherActivity : AppCompatActivity() {
 
     private fun showWorkspaceItemMenu(appInfo: AppInfo, anchor: View) {
         val popup = PopupMenu(this, anchor)
+        popup.menu.add("Move")
         popup.menu.add("Resize")
         popup.menu.add("Remove")
         popup.menu.add("App Info")
         popup.setOnMenuItemClickListener { item ->
             when (item.title) {
+                "Move" -> {
+                    Toast.makeText(this, "Drag to move", Toast.LENGTH_SHORT).show()
+                }
                 "Resize" -> startResizingApp(appInfo, anchor)
                 "Remove" -> {
                     workspacePagerAdapter.removeApp(appInfo)
@@ -272,14 +300,38 @@ class LauncherActivity : AppCompatActivity() {
         overlay.addView(handles)
         
         val handleBottomRight = handles.findViewById<View>(R.id.handle_bottom_right)
+        val outline = handles.findViewById<View>(R.id.resize_outline)
+        outline.visibility = View.VISIBLE
+        
+        val itemLoc = IntArray(2)
+        itemView.getLocationOnScreen(itemLoc)
+        val parentLoc = IntArray(2)
+        homeLayout.getLocationOnScreen(parentLoc)
+        
+        val startX = itemLoc[0] - parentLoc[0]
+        val startY = itemLoc[1] - parentLoc[1]
+        
+        outline.layoutParams = FrameLayout.LayoutParams(itemView.width, itemView.height).apply {
+            leftMargin = startX
+            topMargin = startY
+        }
+        
+        handleBottomRight.translationX = (startX + itemView.width - 20).toFloat()
+        handleBottomRight.translationY = (startY + itemView.height - 20).toFloat()
+
         handleBottomRight?.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_MOVE) {
-                val location = IntArray(2)
-                itemView.getLocationOnScreen(location)
-                val newWidth = event.rawX.toInt() - location[0]
-                val newHeight = event.rawY.toInt() - location[1]
+                val newWidth = (event.rawX - itemLoc[0]).toInt()
+                val newHeight = (event.rawY - itemLoc[1]).toInt()
                 
-                if (newWidth > 50 && newHeight > 50) {
+                if (newWidth > 100 && newHeight > 100) {
+                    outline.layoutParams.width = newWidth
+                    outline.layoutParams.height = newHeight
+                    outline.requestLayout()
+                    
+                    handleBottomRight.translationX = (event.rawX - parentLoc[0]) - 20
+                    handleBottomRight.translationY = (event.rawY - parentLoc[1]) - 20
+
                     itemView.layoutParams.width = newWidth
                     itemView.layoutParams.height = newHeight
 
@@ -290,6 +342,7 @@ class LauncherActivity : AppCompatActivity() {
                         cardParams.height = (newHeight * 0.8f).toInt()
                         iconCard.layoutParams = cardParams
                         iconCard.radius = (Math.min(cardParams.width, cardParams.height) * 0.25f)
+                        itemView.findViewById<com.google.android.material.card.MaterialCardView>(R.id.home_root_card)?.setCardBackgroundColor(0x40FFFFFF)
                     }
                     
                     itemView.requestLayout()
@@ -428,14 +481,38 @@ class LauncherActivity : AppCompatActivity() {
         overlay.addView(handles)
         
         val handleBottomRight = handles.findViewById<View>(R.id.handle_bottom_right)
+        val outline = handles.findViewById<View>(R.id.resize_outline)
+        outline.visibility = View.VISIBLE
+        
+        val itemLoc = IntArray(2)
+        hostView.getLocationOnScreen(itemLoc)
+        val parentLoc = IntArray(2)
+        homeLayout.getLocationOnScreen(parentLoc)
+        
+        val startX = itemLoc[0] - parentLoc[0]
+        val startY = itemLoc[1] - parentLoc[1]
+        
+        outline.layoutParams = FrameLayout.LayoutParams(hostView.width, hostView.height).apply {
+            leftMargin = startX
+            topMargin = startY
+        }
+        
+        handleBottomRight.translationX = (startX + hostView.width - 20).toFloat()
+        handleBottomRight.translationY = (startY + hostView.height - 20).toFloat()
+
         handleBottomRight?.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_MOVE) {
-                val location = IntArray(2)
-                hostView.getLocationOnScreen(location)
-                val newWidth = event.rawX.toInt() - location[0]
-                val newHeight = event.rawY.toInt() - location[1]
+                val newWidth = (event.rawX - itemLoc[0]).toInt()
+                val newHeight = (event.rawY - itemLoc[1]).toInt()
                 
                 if (newWidth > 100 && newHeight > 100) {
+                    outline.layoutParams.width = newWidth
+                    outline.layoutParams.height = newHeight
+                    outline.requestLayout()
+                    
+                    handleBottomRight.translationX = (event.rawX - parentLoc[0]) - 20
+                    handleBottomRight.translationY = (event.rawY - parentLoc[1]) - 20
+
                     hostView.layoutParams.width = newWidth
                     hostView.layoutParams.height = newHeight
                     hostView.requestLayout()
