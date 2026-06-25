@@ -22,7 +22,7 @@ class SettingsActivity : AppCompatActivity() {
         val slider = findViewById<Slider>(R.id.column_slider)
         
         slider.value = prefs.getInt("grid_columns", 4).toFloat()
-
+        // :3
         slider.addOnChangeListener { _, value, _ ->
             prefs.edit().putInt("grid_columns", value.toInt()).apply()
         }
