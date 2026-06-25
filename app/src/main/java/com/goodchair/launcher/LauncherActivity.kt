@@ -42,6 +42,8 @@ import java.util.Locale
 import android.text.Editable
 import android.text.TextWatcher
 import android.graphics.Rect
+import android.graphics.Color
+import androidx.core.view.WindowCompat
 
 class LauncherActivity : AppCompatActivity() {
 
@@ -71,6 +73,10 @@ class LauncherActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         DynamicColors.applyToActivitiesIfAvailable(application)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
 
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
         
