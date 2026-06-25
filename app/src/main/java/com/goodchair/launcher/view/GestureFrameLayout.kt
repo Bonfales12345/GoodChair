@@ -30,9 +30,8 @@ class GestureFrameLayout @JvmOverloads constructor(
             MotionEvent.ACTION_MOVE -> {
                 val diffY = startY - ev.y
                 val diffX = Math.abs(startX - ev.x)
-                // If swiping up and vertical movement is significant
                 if (diffY > touchSlop && diffY > diffX) {
-                    return true // Intercept to handle swipe up
+                    return true
                 }
             }
         }
