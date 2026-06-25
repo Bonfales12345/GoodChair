@@ -7,6 +7,10 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import android.os.Handler
+import android.os.Looper
+import android.view.MotionEvent
+import androidx.recyclerview.widget.ItemTouchHelper
 import com.goodchair.launcher.R
 import com.goodchair.launcher.model.AppInfo
 import java.util.Collections
@@ -17,10 +21,18 @@ class WorkspaceAdapter(
     private val onAppLongClick: (AppInfo, View) -> Boolean
 ) : RecyclerView.Adapter<WorkspaceAdapter.WorkspaceViewHolder>() {
 
+    private var itemTouchHelper: ItemTouchHelper? = null
+
+    fun setItemTouchHelper(helper: ItemTouchHelper) {
+        this.itemTouchHelper = helper
+    }
+
     class WorkspaceViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val iconCard: com.google.android.material.card.MaterialCardView = view.findViewById(R.id.icon_card)
         val icon: ImageView = view.findViewById(R.id.app_icon)
         val name: TextView = view.findViewById(R.id.app_name)
+        val handler = Handler(Looper.getMainLooper())
+        var dragRunnable: Runnable? = null
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): WorkspaceViewHolder {
@@ -36,6 +48,7 @@ class WorkspaceAdapter(
             holder.itemView.visibility = View.INVISIBLE
             holder.itemView.setOnClickListener(null)
             holder.itemView.setOnLongClickListener(null)
+            holder.itemView.setOnTouchListener(null)
             return
         }
 
@@ -69,6 +82,23 @@ class WorkspaceAdapter(
         holder.icon.setImageDrawable(app.icon)
         holder.itemView.setOnClickListener { onAppClick(app) }
         holder.itemView.setOnLongClickListener { onAppLongClick(app, it) }
+
+        holder.dragRunnable?.let { holder.handler.removeCallbacks(it) }
+        holder.dragRunnable = Runnable {
+            itemTouchHelper?.startDrag(holder)
+        }
+
+        holder.itemView.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    holder.dragRunnable?.let { holder.handler.postDelayed(it, 2000) }
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    holder.dragRunnable?.let { holder.handler.removeCallbacks(it) }
+                }
+            }
+            false
+        }
     }
 
     override fun getItemCount(): Int = 16

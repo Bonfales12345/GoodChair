@@ -8,6 +8,8 @@
         <item name="colorSecondary">@color/teal_200</item>
         <item name="colorOnSecondary">@color/black</item>
 
+        <item name="colorOnSurfaceVariant">#49454F</item>
+
         <!-- Wallpaper and Transparency -->
         <item name="android:windowShowWallpaper">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>

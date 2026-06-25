@@ -264,15 +264,11 @@ class LauncherActivity : AppCompatActivity() {
 
     private fun showWorkspaceItemMenu(appInfo: AppInfo, anchor: View) {
         val popup = PopupMenu(this, anchor)
-        popup.menu.add("Move")
         popup.menu.add("Resize")
         popup.menu.add("Remove")
         popup.menu.add("App Info")
         popup.setOnMenuItemClickListener { item ->
             when (item.title) {
-                "Move" -> {
-                    Toast.makeText(this, "Drag to move", Toast.LENGTH_SHORT).show()
-                }
                 "Resize" -> startResizingApp(appInfo, anchor)
                 "Remove" -> {
                     workspacePagerAdapter.removeApp(appInfo)

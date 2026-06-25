@@ -40,8 +40,10 @@ class WorkspacePagerAdapter(
                 return true
             }
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
+            override fun isLongPressDragEnabled(): Boolean = false
         })
         itemTouchHelper.attachToRecyclerView(holder.recyclerView)
+        adapter.setItemTouchHelper(itemTouchHelper)
     }
 
     override fun getItemCount(): Int = pages.size
